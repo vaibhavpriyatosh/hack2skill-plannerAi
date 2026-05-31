@@ -2,6 +2,12 @@
 
 This project is set up as a production-oriented baseline for a travel planning engine hackathon build.
 
+---
+
+Focused and improved on 6 parameters Code Quality, Security, Efficiency, Testing, Accessibility, Problem Statement Alignment
+
+---
+
 ## What is Included
 
 - Next.js App Router (frontend + backend)
