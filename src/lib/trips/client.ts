@@ -4,7 +4,7 @@ type ApiErrorResponse = {
   error?: string;
 };
 
-class ApiClientError extends Error {
+export class ApiClientError extends Error {
   status: number;
 
   constructor(message: string, status: number) {

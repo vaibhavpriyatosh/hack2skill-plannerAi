@@ -1,48 +1,18 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { signIn, useSession } from "next-auth/react";
+import { redirect } from "next/navigation";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth/options";
+import { getEnv } from "@/lib/env";
+import { GoogleSignInButton } from "@/components/google-signin-button";
 import styles from "./page.module.css";
 
-type ConfigResponse = {
-  googleAuthConfigured: boolean;
-};
+export default async function Home() {
+  const session = await getServerSession(authOptions);
+  if (session?.user?.id) {
+    redirect("/travel");
+  }
 
-export default function Home() {
-  const router = useRouter();
-  const { status } = useSession();
-  const [isGoogleAuthConfigured, setIsGoogleAuthConfigured] = useState(false);
-  const [isLoadingConfig, setIsLoadingConfig] = useState(true);
-
-  useEffect(() => {
-    if (status === "authenticated") {
-      router.replace("/travel");
-    }
-  }, [router, status]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    async function loadConfig() {
-      try {
-        const response = await fetch("/api/config", {
-          signal: controller.signal,
-        });
-
-        const data = (await response.json()) as ConfigResponse;
-        setIsGoogleAuthConfigured(data.googleAuthConfigured);
-      } catch {
-        setIsGoogleAuthConfigured(false);
-      } finally {
-        setIsLoadingConfig(false);
-      }
-    }
-
-    void loadConfig();
-
-    return () => controller.abort();
-  }, []);
+  const env = getEnv();
+  const isGoogleAuthConfigured = Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
 
   return (
     <div className={styles.page}>
@@ -56,20 +26,9 @@ export default function Home() {
           </p>
 
           <div className={styles.ctaBlock}>
-            <button
-              type="button"
-              className={styles.ctaButton}
-              onClick={() => void signIn("google", { callbackUrl: "/travel" })}
-              disabled={!isGoogleAuthConfigured || isLoadingConfig || status === "loading"}
-            >
-              {status === "loading"
-                ? "Checking session..."
-                : isLoadingConfig
-                  ? "Preparing login..."
-                  : "Continue with Google"}
-            </button>
+            <GoogleSignInButton disabled={!isGoogleAuthConfigured} />
 
-            {!isGoogleAuthConfigured && !isLoadingConfig ? (
+            {!isGoogleAuthConfigured ? (
               <p className={styles.warning}>
                 Login is temporarily unavailable. Please try again in a moment.
               </p>

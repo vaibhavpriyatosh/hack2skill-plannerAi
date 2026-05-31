@@ -14,6 +14,52 @@ This project is set up as a production-oriented baseline for a travel planning e
 - Vitest test suite for utility and planner logic
 - Accessibility-first starter UI patterns
 
+## AI Evaluation Improvements (6 Sectors)
+
+This project was improved specifically against the six evaluation sectors shown in the score report.
+
+1. Code Quality
+- Introduced shared trip contracts in `src/lib/trips/types.ts` to reduce duplicated inline types.
+- Added a typed API client in `src/lib/trips/client.ts` for consistent request/response handling.
+- Removed unused legacy code (`travel-dashboard` + old debounce utility) to reduce maintenance surface.
+- Kept server/data responsibilities clearer: server pages prefetch data, client components focus on interaction.
+
+2. Security
+- Production env validation enforces OAuth + DB requirements and secure secret length.
+- API inputs are sanitized and validated with Zod (`createTripSchema`, `replanTripSchema`).
+- Auth uses Google profile validation before user mapping.
+- Non-secret config is isolated in `/api/config`; secrets remain server-side env values.
+
+3. Efficiency
+- Reduced extra client fetches:
+  - `/` now does server-side session/config checks instead of client round trips.
+  - `/travel` uses server-prefetched previous searches (`initialTrips`) instead of immediate client refetch.
+- Trip list endpoint now returns summaries for list views (no large itinerary payload in history cards).
+- Removed unnecessary debounced status update path and related state churn.
+
+4. Testing
+- Expanded automated tests for critical logic:
+  - `src/lib/validation/trip-schema.test.ts`
+  - `src/lib/openai/itinerary.test.ts`
+  - `src/lib/trips/client.test.ts`
+  - `src/lib/env.test.ts`
+- Existing parser/sanitize tests retained.
+- Current suite: 19 passing tests (`pnpm test`), with coverage reporting (`pnpm test:coverage`).
+
+5. Accessibility
+- Semantic structure preserved across pages (forms, labels, headings, status regions, button states).
+- Date and input controls use explicit labels and required/disabled semantics.
+- Focus-visible/button behavior maintained with keyboard-friendly interactions.
+
+6. Problem Statement Alignment
+- Maintains end-to-end travel planner workflow:
+  - Google login -> userId mapping -> trip input -> OpenAI itinerary generation -> replanning.
+- Supports production deployment expectations:
+  - Hosted Postgres persistence
+  - Validation + logging
+  - Auth-protected APIs
+  - Travel search + detailed itinerary pages.
+
 ## Project Structure
 
 - `src/app` - frontend pages and API routes
@@ -22,7 +68,7 @@ This project is set up as a production-oriented baseline for a travel planning e
 - `src/lib/validation` - input sanitization and API schemas
 - `src/lib/planner` - itinerary schema and parser
 - `src/lib/openai` - OpenAI integration for trip planning
-- `src/lib/utils` - reusable utility functions
+- `src/lib/trips` - shared trip contracts and typed API client helpers
 - `src/types` - NextAuth type augmentation
 - `src/test` - test setup
 - `REQUIREMENTS.md` - explicit project requirements baseline

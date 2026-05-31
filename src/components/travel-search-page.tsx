@@ -1,23 +1,17 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { createTripRequest } from "@/lib/trips/client";
 import type { BudgetMode, TripSummary } from "@/lib/trips/types";
-import { debounce } from "@/lib/utils/debounce";
 import styles from "./travel-search-page.module.css";
 
 type TravelSearchPageProps = {
   email: string;
   name: string;
   initialTrips: TripSummary[];
-};
-
-type ProfileResponse = {
-  name: string | null;
-  email: string;
 };
 
 function getFirstName(name: string, fallbackEmail: string): string {
@@ -41,7 +35,6 @@ export function TravelSearchPage({ email, name, initialTrips }: TravelSearchPage
     return next.toISOString().slice(0, 10);
   }, [today]);
 
-  const [profile, setProfile] = useState<ProfileResponse | null>(null);
   const [tripMode, setTripMode] = useState<"oneWay" | "roundTrip">("roundTrip");
   const [destination, setDestination] = useState("");
   const [departureDate, setDepartureDate] = useState(defaultDepartureDate);
@@ -50,31 +43,6 @@ export function TravelSearchPage({ email, name, initialTrips }: TravelSearchPage
   const [vibe, setVibe] = useState("");
   const [statusText, setStatusText] = useState("Ready to build your itinerary.");
   const [isSearching, setIsSearching] = useState(false);
-
-  const debouncedStatusUpdate = useMemo(
-    () => debounce((value: string) => setStatusText(value), 180),
-    [],
-  );
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    async function loadData() {
-      try {
-        const profileResponse = await fetch("/api/profile", { signal: controller.signal });
-        if (profileResponse.ok) {
-          const profilePayload = (await profileResponse.json()) as ProfileResponse;
-          setProfile(profilePayload);
-        }
-      } catch {
-        debouncedStatusUpdate("Could not load previous searches right now.");
-      }
-    }
-
-    void loadData();
-
-    return () => controller.abort();
-  }, [debouncedStatusUpdate]);
 
   const handleSearch = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -95,16 +63,15 @@ export function TravelSearchPage({ email, name, initialTrips }: TravelSearchPage
         vibe,
       });
 
-      debouncedStatusUpdate("Itinerary generated. Opening details...");
+      setStatusText("Itinerary generated. Opening details...");
       router.push(`/travel/${trip.id}`);
     } catch {
       setIsSearching(false);
-      debouncedStatusUpdate("Search failed. Please retry.");
+      setStatusText("Search failed. Please retry.");
     }
   };
 
-  const displayName = profile?.name ?? name;
-  const firstName = getFirstName(displayName ?? "", profile?.email ?? email);
+  const firstName = getFirstName(name, email);
 
   return (
     <div className={styles.page}>
