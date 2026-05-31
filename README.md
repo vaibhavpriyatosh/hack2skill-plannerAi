@@ -8,6 +8,7 @@ This project is set up as a production-oriented baseline for a travel planning e
 - Google authentication with NextAuth
 - Hosted Postgres persistence (`DATABASE_URL` / `POSTGRES_URL`)
 - Stable internal `userId` mapping for Google users
+- OpenAI-backed itinerary generation + replanning
 - Zod validation layer for API and structured itinerary parsing
 - Structured logging with Pino
 - Vitest test suite for utility and planner logic
@@ -20,6 +21,7 @@ This project is set up as a production-oriented baseline for a travel planning e
 - `src/lib/db` - Postgres service layer and persistence helpers
 - `src/lib/validation` - input sanitization and API schemas
 - `src/lib/planner` - itinerary schema and parser
+- `src/lib/openai` - OpenAI integration for trip planning
 - `src/lib/utils` - reusable utility functions
 - `src/types` - NextAuth type augmentation
 - `src/test` - test setup
@@ -32,6 +34,7 @@ This project is set up as a production-oriented baseline for a travel planning e
 3. Add your hosted Postgres connection string in `DATABASE_URL`
 4. Keep `NEXTAUTH_SECRET` long and random (32+ chars)
 5. If your provider has custom/self-signed chain in dev, set `DB_SSL_REJECT_UNAUTHORIZED=false`
+6. Add `OPENAI_API_KEY` (optional fallback itinerary is used when missing)
 
 Google OAuth callback URL to configure in Google console:
 
@@ -51,6 +54,9 @@ Open `http://localhost:3000`
 - `GET /api/message` - Backend health response (validated)
 - `POST /api/message` - Validated request/response demo
 - `GET /api/profile` - Auth-protected profile from Postgres
+- `GET /api/trips` - List user trips
+- `POST /api/trips` - Create a new trip + generate itinerary
+- `POST /api/trips/:tripId/replan` - Replan an existing itinerary
 - `GET|POST /api/auth/[...nextauth]` - NextAuth endpoints
 
 ## Testing

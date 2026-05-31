@@ -6,6 +6,8 @@ const baseSchema = z.object({
   NEXTAUTH_SECRET: z.string().min(16).default("dev-only-secret-change-me"),
   GOOGLE_CLIENT_ID: z.string().default(""),
   GOOGLE_CLIENT_SECRET: z.string().default(""),
+  OPENAI_API_KEY: z.string().default(""),
+  OPENAI_MODEL: z.string().default("gpt-4o-mini"),
   DB_URL: z.string().default(""),
   DATABASE_URL: z.string().default(""),
   POSTGRES_URL: z.string().default(""),

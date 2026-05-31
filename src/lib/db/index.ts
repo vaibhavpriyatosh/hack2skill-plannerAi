@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { Pool, type QueryResultRow } from "pg";
 import { getEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
+import { type Itinerary } from "@/lib/planner/schema";
 
 type DbUserRow = {
   id: string;
@@ -26,6 +27,27 @@ type ApiLogInput = {
   statusCode: number;
   message: string;
   userId?: string | null;
+};
+
+type CreateTripInput = {
+  userId: string;
+  destination: string;
+  dateRange: string;
+  budget: "lean" | "standard" | "premium";
+  vibe: string;
+};
+
+export type TripRecord = {
+  id: string;
+  user_id: string;
+  destination: string;
+  date_range: string;
+  budget: "lean" | "standard" | "premium";
+  vibe: string;
+  status: "drafting" | "ready" | "failed";
+  itinerary_json: Itinerary | null;
+  created_at: string;
+  updated_at: string;
 };
 
 const globalDb = globalThis as typeof globalThis & {
@@ -123,8 +145,25 @@ export async function initDatabase(): Promise<void> {
       )
     `);
 
+    await query(`
+      CREATE TABLE IF NOT EXISTS trips (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        destination TEXT NOT NULL,
+        date_range TEXT NOT NULL,
+        budget TEXT NOT NULL CHECK (budget IN ('lean', 'standard', 'premium')),
+        vibe TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'drafting' CHECK (status IN ('drafting', 'ready', 'failed')),
+        itinerary_json JSONB,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+
     await query(`CREATE INDEX IF NOT EXISTS idx_api_logs_route ON api_logs(route)`);
     await query(`CREATE INDEX IF NOT EXISTS idx_api_logs_created_at ON api_logs(created_at)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_trips_user_id ON trips(user_id)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_trips_created_at ON trips(created_at DESC)`);
   })();
 
   return globalDb.__schemaReadyPromise;
@@ -208,4 +247,65 @@ export async function insertApiLog(input: ApiLogInput): Promise<void> {
   } catch (error) {
     logger.warn({ error, route: input.route }, "Failed to persist API log");
   }
+}
+
+export async function createTrip(input: CreateTripInput): Promise<TripRecord> {
+  await initDatabase();
+
+  const tripId = randomUUID();
+  const rows = await query<TripRecord>(
+    `INSERT INTO trips (id, user_id, destination, date_range, budget, vibe, status)
+     VALUES ($1, $2, $3, $4, $5, $6, 'drafting')
+     RETURNING id, user_id, destination, date_range, budget, vibe, status, itinerary_json, created_at::text, updated_at::text`,
+    [tripId, input.userId, input.destination, input.dateRange, input.budget, input.vibe],
+  );
+
+  return rows[0];
+}
+
+export async function listTripsByUser(userId: string): Promise<TripRecord[]> {
+  await initDatabase();
+
+  const rows = await query<TripRecord>(
+    `SELECT id, user_id, destination, date_range, budget, vibe, status, itinerary_json, created_at::text, updated_at::text
+     FROM trips
+     WHERE user_id = $1
+     ORDER BY created_at DESC`,
+    [userId],
+  );
+
+  return rows;
+}
+
+export async function findTripByIdForUser(tripId: string, userId: string): Promise<TripRecord | null> {
+  await initDatabase();
+
+  const rows = await query<TripRecord>(
+    `SELECT id, user_id, destination, date_range, budget, vibe, status, itinerary_json, created_at::text, updated_at::text
+     FROM trips
+     WHERE id = $1 AND user_id = $2
+     LIMIT 1`,
+    [tripId, userId],
+  );
+
+  return rows[0] ?? null;
+}
+
+export async function updateTripItinerary(
+  tripId: string,
+  userId: string,
+  itinerary: Itinerary,
+  status: "ready" | "failed" = "ready",
+): Promise<TripRecord | null> {
+  await initDatabase();
+
+  const rows = await query<TripRecord>(
+    `UPDATE trips
+     SET itinerary_json = $1::jsonb, status = $2, updated_at = NOW()
+     WHERE id = $3 AND user_id = $4
+     RETURNING id, user_id, destination, date_range, budget, vibe, status, itinerary_json, created_at::text, updated_at::text`,
+    [JSON.stringify(itinerary), status, tripId, userId],
+  );
+
+  return rows[0] ?? null;
 }

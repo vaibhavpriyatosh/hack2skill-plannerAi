@@ -155,9 +155,10 @@ export default function Home() {
         <header className={styles.header}>
           <h1>Production-Ready Next.js Travel Engine Starter</h1>
           <p>
-            Includes secure Google auth, SQLite persistence, schema validation, logging, test setup,
-            and accessibility-first UI patterns.
+            Includes secure Google auth, hosted Postgres persistence, schema validation, logging, test
+            setup, and accessibility-first UI patterns.
           </p>
+          <p>After sign-in, you are redirected to the dedicated `/travel` operations dashboard.</p>
           <p className={styles.status} role="status" aria-live="polite">
             {statusText}
           </p>

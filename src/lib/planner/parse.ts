@@ -35,7 +35,14 @@ export function parseItineraryResponse(raw: string): ParseResult {
     };
   }
 
-  const strict = itinerarySchema.safeParse(parsedJson);
+  const candidate =
+    typeof parsedJson === "object" && parsedJson !== null
+      ? ((parsedJson as Record<string, unknown>).itinerary ??
+          (parsedJson as Record<string, unknown>).plan ??
+          parsedJson)
+      : parsedJson;
+
+  const strict = itinerarySchema.safeParse(candidate);
   if (strict.success) {
     return {
       success: true,
@@ -44,7 +51,7 @@ export function parseItineraryResponse(raw: string): ParseResult {
     };
   }
 
-  const repairable = repairableSchema.safeParse(parsedJson);
+  const repairable = repairableSchema.safeParse(candidate);
   if (!repairable.success) {
     return {
       success: false,
