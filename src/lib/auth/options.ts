@@ -60,7 +60,7 @@ export const authOptions: NextAuthOptions = {
           return token;
         }
 
-        const userId = upsertGoogleUser({
+        const userId = await upsertGoogleUser({
           email: parsedProfile.data.email,
           name: parsedProfile.data.name ?? null,
           image: parsedProfile.data.picture ?? null,

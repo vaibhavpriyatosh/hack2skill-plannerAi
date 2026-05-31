@@ -6,7 +6,7 @@ This project is set up as a production-oriented baseline for a travel planning e
 
 - Next.js App Router (frontend + backend)
 - Google authentication with NextAuth
-- SQLite in-house persistence (`data/app.sqlite`)
+- Hosted Postgres persistence (`DATABASE_URL` / `POSTGRES_URL`)
 - Stable internal `userId` mapping for Google users
 - Zod validation layer for API and structured itinerary parsing
 - Structured logging with Pino
@@ -17,7 +17,7 @@ This project is set up as a production-oriented baseline for a travel planning e
 
 - `src/app` - frontend pages and API routes
 - `src/lib/auth` - auth options and callbacks
-- `src/lib/db` - SQLite service layer and persistence helpers
+- `src/lib/db` - Postgres service layer and persistence helpers
 - `src/lib/validation` - input sanitization and API schemas
 - `src/lib/planner` - itinerary schema and parser
 - `src/lib/utils` - reusable utility functions
@@ -29,7 +29,9 @@ This project is set up as a production-oriented baseline for a travel planning e
 
 1. Copy `.env.example` to `.env.local`
 2. Fill values for Google OAuth credentials
-3. Keep `NEXTAUTH_SECRET` long and random (32+ chars)
+3. Add your hosted Postgres connection string in `DATABASE_URL`
+4. Keep `NEXTAUTH_SECRET` long and random (32+ chars)
+5. If your provider has custom/self-signed chain in dev, set `DB_SSL_REJECT_UNAUTHORIZED=false`
 
 Google OAuth callback URL to configure in Google console:
 
@@ -48,7 +50,7 @@ Open `http://localhost:3000`
 - `GET /api/config` - Returns non-secret runtime feature flags
 - `GET /api/message` - Backend health response (validated)
 - `POST /api/message` - Validated request/response demo
-- `GET /api/profile` - Auth-protected profile from SQLite
+- `GET /api/profile` - Auth-protected profile from Postgres
 - `GET|POST /api/auth/[...nextauth]` - NextAuth endpoints
 
 ## Testing

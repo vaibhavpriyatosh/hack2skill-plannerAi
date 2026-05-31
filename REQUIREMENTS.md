@@ -7,7 +7,7 @@ This file captures the confirmed requirements for this project.
 - Use the existing project in `next-fullstack-app`
 - Build a production-ready setup
 - Include auth, database, validation, and logging
-- Use in-house SQLite
+- Use hosted Postgres for deployment reliability
 - Use simple Google login mapped to internal `userId`
 - Mark attached criteria as requirements
 

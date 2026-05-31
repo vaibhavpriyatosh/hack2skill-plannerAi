@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
 import { AuthSessionProvider } from "@/components/auth-session-provider";
-import { initDatabase } from "@/lib/db";
 import "./globals.css";
-
-initDatabase();
 
 export const metadata: Metadata = {
   title: "Travel Planning Engine | Production Starter",

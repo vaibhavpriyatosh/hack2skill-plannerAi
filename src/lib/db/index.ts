@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
-import { mkdirSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { DatabaseSync } from "node:sqlite";
+import { Pool, type QueryResultRow } from "pg";
+import { getEnv } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 type DbUserRow = {
   id: string;
@@ -28,24 +28,10 @@ type ApiLogInput = {
   userId?: string | null;
 };
 
-const dbPath = resolve(process.cwd(), "data/app.sqlite");
-mkdirSync(dirname(dbPath), { recursive: true });
-
-const globalDb = globalThis as typeof globalThis & { __appDb?: DatabaseSync };
-
-const db =
-  globalDb.__appDb ??
-  new DatabaseSync(dbPath, {
-    open: true,
-  });
-
-if (!globalDb.__appDb) {
-  db.exec("PRAGMA journal_mode = WAL;");
-  db.exec("PRAGMA foreign_keys = ON;");
-  globalDb.__appDb = db;
-}
-
-let initialized = false;
+const globalDb = globalThis as typeof globalThis & {
+  __appPgPool?: Pool;
+  __schemaReadyPromise?: Promise<void>;
+};
 
 function normalizeNullable(value: string | null | undefined): string | null {
   if (!value) {
@@ -56,100 +42,170 @@ function normalizeNullable(value: string | null | undefined): string | null {
   return sanitized.length > 0 ? sanitized : null;
 }
 
-export function initDatabase(): void {
-  if (initialized) {
-    return;
+function getConnectionString(): string {
+  const env = getEnv();
+  const conn = env.DATABASE_URL || env.POSTGRES_URL;
+
+  if (!conn) {
+    throw new Error("Missing DATABASE_URL/POSTGRES_URL for database connection.");
   }
 
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS users (
-      id TEXT PRIMARY KEY,
-      email TEXT NOT NULL UNIQUE,
-      name TEXT,
-      image TEXT,
-      provider TEXT NOT NULL,
-      provider_account_id TEXT NOT NULL UNIQUE,
-      created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS api_logs (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      route TEXT NOT NULL,
-      status_code INTEGER NOT NULL,
-      message TEXT NOT NULL,
-      user_id TEXT,
-      created_at TEXT NOT NULL,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_api_logs_route ON api_logs(route);
-    CREATE INDEX IF NOT EXISTS idx_api_logs_created_at ON api_logs(created_at);
-  `);
-
-  initialized = true;
+  return conn;
 }
 
-export function upsertGoogleUser(input: UpsertGoogleUserInput): string {
-  initDatabase();
+function normalizeConnectionString(raw: string): string {
+  const url = new URL(raw);
+  // We control TLS behavior via Pool.ssl to avoid sslmode/parser mismatches.
+  url.searchParams.delete("sslmode");
+  url.searchParams.delete("sslcert");
+  url.searchParams.delete("sslkey");
+  url.searchParams.delete("sslrootcert");
+  return url.toString();
+}
 
-  const now = new Date().toISOString();
+function getPool(): Pool {
+  if (globalDb.__appPgPool) {
+    return globalDb.__appPgPool;
+  }
+
+  const env = getEnv();
+  const rawConnectionString = getConnectionString();
+  const connectionString = normalizeConnectionString(rawConnectionString);
+  const rejectUnauthorized = env.DB_SSL_REJECT_UNAUTHORIZED === "true";
+  const shouldUseSsl = rawConnectionString.startsWith("postgres://") || rawConnectionString.startsWith("postgresql://");
+
+  globalDb.__appPgPool = new Pool({
+    connectionString,
+    max: 5,
+    idleTimeoutMillis: 30_000,
+    ssl: shouldUseSsl ? { rejectUnauthorized } : undefined,
+  });
+
+  return globalDb.__appPgPool;
+}
+
+async function query<T extends QueryResultRow = QueryResultRow>(
+  text: string,
+  params: unknown[] = [],
+): Promise<T[]> {
+  const pool = getPool();
+  const result = await pool.query<T>(text, params);
+  return result.rows;
+}
+
+export async function initDatabase(): Promise<void> {
+  if (globalDb.__schemaReadyPromise) {
+    return globalDb.__schemaReadyPromise;
+  }
+
+  globalDb.__schemaReadyPromise = (async () => {
+    await query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        email TEXT NOT NULL UNIQUE,
+        name TEXT,
+        image TEXT,
+        provider TEXT NOT NULL,
+        provider_account_id TEXT NOT NULL UNIQUE,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    await query(`
+      CREATE TABLE IF NOT EXISTS api_logs (
+        id BIGSERIAL PRIMARY KEY,
+        route TEXT NOT NULL,
+        status_code INTEGER NOT NULL,
+        message TEXT NOT NULL,
+        user_id TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    await query(`CREATE INDEX IF NOT EXISTS idx_api_logs_route ON api_logs(route)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_api_logs_created_at ON api_logs(created_at)`);
+  })();
+
+  return globalDb.__schemaReadyPromise;
+}
+
+export async function upsertGoogleUser(input: UpsertGoogleUserInput): Promise<string> {
+  await initDatabase();
+
   const email = input.email.trim().toLowerCase();
   const name = normalizeNullable(input.name);
   const image = normalizeNullable(input.image);
 
-  const existingByProvider = db
-    .prepare(`SELECT id FROM users WHERE provider = ? AND provider_account_id = ? LIMIT 1`)
-    .get("google", input.googleSub) as { id: string } | undefined;
+  const existingByProvider = await query<{ id: string }>(
+    `SELECT id FROM users WHERE provider = 'google' AND provider_account_id = $1 LIMIT 1`,
+    [input.googleSub],
+  );
 
-  if (existingByProvider?.id) {
-    db.prepare(`UPDATE users SET email = ?, name = ?, image = ?, updated_at = ? WHERE id = ?`).run(
-      email,
-      name,
-      image,
-      now,
-      existingByProvider.id,
+  if (existingByProvider[0]?.id) {
+    const userId = existingByProvider[0].id;
+
+    await query(
+      `UPDATE users SET email = $1, name = $2, image = $3, updated_at = NOW() WHERE id = $4`,
+      [email, name, image, userId],
     );
-    return existingByProvider.id;
+
+    return userId;
   }
 
-  const existingByEmail = db
-    .prepare(`SELECT id FROM users WHERE email = ? LIMIT 1`)
-    .get(email) as { id: string } | undefined;
+  const existingByEmail = await query<{ id: string }>(
+    `SELECT id FROM users WHERE email = $1 LIMIT 1`,
+    [email],
+  );
 
-  if (existingByEmail?.id) {
-    db.prepare(
+  if (existingByEmail[0]?.id) {
+    const userId = existingByEmail[0].id;
+
+    await query(
       `UPDATE users
-       SET name = ?, image = ?, provider = ?, provider_account_id = ?, updated_at = ?
-       WHERE id = ?`,
-    ).run(name, image, "google", input.googleSub, now, existingByEmail.id);
-    return existingByEmail.id;
+       SET name = $1, image = $2, provider = 'google', provider_account_id = $3, updated_at = NOW()
+       WHERE id = $4`,
+      [name, image, input.googleSub, userId],
+    );
+
+    return userId;
   }
 
   const id = randomUUID();
-  db.prepare(
-    `INSERT INTO users (id, email, name, image, provider, provider_account_id, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-  ).run(id, email, name, image, "google", input.googleSub, now, now);
+
+  await query(
+    `INSERT INTO users (id, email, name, image, provider, provider_account_id)
+     VALUES ($1, $2, $3, $4, 'google', $5)`,
+    [id, email, name, image, input.googleSub],
+  );
 
   return id;
 }
 
-export function findUserById(userId: string): DbUserRow | null {
-  initDatabase();
+export async function findUserById(userId: string): Promise<DbUserRow | null> {
+  await initDatabase();
 
-  const row = db.prepare(`SELECT * FROM users WHERE id = ? LIMIT 1`).get(userId) as
-    | DbUserRow
-    | undefined;
+  const rows = await query<DbUserRow>(
+    `SELECT id, email, name, image, provider, provider_account_id, created_at::text, updated_at::text
+     FROM users
+     WHERE id = $1
+     LIMIT 1`,
+    [userId],
+  );
 
-  return row ?? null;
+  return rows[0] ?? null;
 }
 
-export function insertApiLog(input: ApiLogInput): void {
-  initDatabase();
+export async function insertApiLog(input: ApiLogInput): Promise<void> {
+  try {
+    await initDatabase();
 
-  db.prepare(
-    `INSERT INTO api_logs (route, status_code, message, user_id, created_at)
-     VALUES (?, ?, ?, ?, ?)`,
-  ).run(input.route, input.statusCode, input.message, input.userId ?? null, new Date().toISOString());
+    await query(
+      `INSERT INTO api_logs (route, status_code, message, user_id)
+       VALUES ($1, $2, $3, $4)`,
+      [input.route, input.statusCode, input.message, input.userId ?? null],
+    );
+  } catch (error) {
+    logger.warn({ error, route: input.route }, "Failed to persist API log");
+  }
 }

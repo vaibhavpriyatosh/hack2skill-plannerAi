@@ -9,7 +9,7 @@ export async function GET() {
   const userId = session?.user?.id;
 
   if (!userId) {
-    insertApiLog({
+    await insertApiLog({
       route: "/api/profile",
       statusCode: 401,
       message: "Unauthorized profile request",
@@ -18,9 +18,9 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const user = findUserById(userId);
+  const user = await findUserById(userId);
   if (!user) {
-    insertApiLog({
+    await insertApiLog({
       route: "/api/profile",
       statusCode: 404,
       message: "User not found",
@@ -40,7 +40,7 @@ export async function GET() {
     updatedAt: user.updated_at,
   };
 
-  insertApiLog({
+  await insertApiLog({
     route: "/api/profile",
     statusCode: 200,
     message: "Profile fetched successfully",

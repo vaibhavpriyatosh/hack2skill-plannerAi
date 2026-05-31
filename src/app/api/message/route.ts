@@ -11,14 +11,14 @@ const getResponseSchema = z.object({
 
 export async function GET() {
   const payload = {
-    message: "Backend is running with validation, logging, and SQLite persistence.",
+    message: "Backend is running with validation, logging, and hosted Postgres persistence.",
     time: new Date().toISOString(),
   };
 
   const parsed = getResponseSchema.safeParse(payload);
   if (!parsed.success) {
     logger.error({ issues: parsed.error.issues }, "GET /api/message payload failed validation");
-    insertApiLog({
+    await insertApiLog({
       route: "/api/message",
       statusCode: 500,
       message: "Response validation failed",
@@ -26,7 +26,7 @@ export async function GET() {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 
-  insertApiLog({
+  await insertApiLog({
     route: "/api/message",
     statusCode: 200,
     message: "GET message served",
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
     const parsed = messageRequestSchema.safeParse(body);
 
     if (!parsed.success) {
-      insertApiLog({
+      await insertApiLog({
         route: "/api/message",
         statusCode: 400,
         message: "Invalid POST payload",
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
       time: new Date().toISOString(),
     };
 
-    insertApiLog({
+    await insertApiLog({
       route: "/api/message",
       statusCode: 200,
       message: "Validated POST message served",
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
   } catch (error) {
     logger.error({ error }, "POST /api/message failed unexpectedly");
 
-    insertApiLog({
+    await insertApiLog({
       route: "/api/message",
       statusCode: 500,
       message: "Unhandled POST message error",
