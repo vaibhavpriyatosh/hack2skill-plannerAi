@@ -3,6 +3,7 @@ import { Pool, type QueryResultRow } from "pg";
 import { getEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { type Itinerary } from "@/lib/planner/schema";
+import type { BudgetMode, TripRecord, TripSummary } from "@/lib/trips/types";
 
 type DbUserRow = {
   id: string;
@@ -33,21 +34,8 @@ type CreateTripInput = {
   userId: string;
   destination: string;
   dateRange: string;
-  budget: "lean" | "standard" | "premium";
+  budget: BudgetMode;
   vibe: string;
-};
-
-export type TripRecord = {
-  id: string;
-  user_id: string;
-  destination: string;
-  date_range: string;
-  budget: "lean" | "standard" | "premium";
-  vibe: string;
-  status: "drafting" | "ready" | "failed";
-  itinerary_json: Itinerary | null;
-  created_at: string;
-  updated_at: string;
 };
 
 const globalDb = globalThis as typeof globalThis & {
@@ -268,6 +256,20 @@ export async function listTripsByUser(userId: string): Promise<TripRecord[]> {
 
   const rows = await query<TripRecord>(
     `SELECT id, user_id, destination, date_range, budget, vibe, status, itinerary_json, created_at::text, updated_at::text
+     FROM trips
+     WHERE user_id = $1
+     ORDER BY created_at DESC`,
+    [userId],
+  );
+
+  return rows;
+}
+
+export async function listTripSummariesByUser(userId: string): Promise<TripSummary[]> {
+  await initDatabase();
+
+  const rows = await query<TripSummary>(
+    `SELECT id, destination, date_range, budget, vibe, status, created_at::text
      FROM trips
      WHERE user_id = $1
      ORDER BY created_at DESC`,

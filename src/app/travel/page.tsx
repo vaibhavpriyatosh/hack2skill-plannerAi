@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
-import { TravelDashboard } from "@/components/travel-dashboard";
+import { TravelSearchPage } from "@/components/travel-search-page";
 import { authOptions } from "@/lib/auth/options";
+import { listTripSummariesByUser } from "@/lib/db";
 
 export default async function TravelPage() {
   const session = await getServerSession(authOptions);
@@ -10,11 +11,13 @@ export default async function TravelPage() {
     redirect("/");
   }
 
+  const trips = await listTripSummariesByUser(session.user.id);
+
   return (
-    <TravelDashboard
-      userId={session.user.id}
+    <TravelSearchPage
       email={session.user.email ?? "traveler@example.com"}
       name={session.user.name ?? "Traveler"}
+      initialTrips={trips}
     />
   );
 }

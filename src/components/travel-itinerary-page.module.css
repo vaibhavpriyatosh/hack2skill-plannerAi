@@ -1,0 +1,166 @@
+.page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #d8ebf4 0%, #edf6fb 100%);
+  padding: 16px 20px 30px;
+  color: #123955;
+  font-family: "Avenir Next", "Trebuchet MS", "Segoe UI", sans-serif;
+}
+
+.main {
+  width: min(1120px, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 14px;
+}
+
+.topActions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.backLink {
+  border: 1px solid #c5dbe9;
+  border-radius: 999px;
+  padding: 7px 12px;
+  text-decoration: none;
+  font-weight: 700;
+  color: #0f5d87;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.heroCard,
+.replanCard,
+.itineraryCard {
+  border: 1px solid #d1e3ee;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 8px 22px rgba(20, 57, 82, 0.1);
+  padding: 18px;
+}
+
+.badge {
+  margin: 0;
+  display: inline-block;
+  border-radius: 999px;
+  background: #e6f6ff;
+  color: #0c6f99;
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.heroCard h1 {
+  margin: 10px 0 8px;
+  font-size: clamp(1.5rem, 3vw, 2.1rem);
+}
+
+.heroCard p {
+  margin: 0;
+  color: #3a5f73;
+}
+
+.replanForm {
+  display: grid;
+  gap: 8px;
+}
+
+.replanForm label {
+  font-weight: 700;
+}
+
+.replanForm input {
+  border: 1px solid #c2dae7;
+  border-radius: 10px;
+  padding: 10px 11px;
+  color: #153f58;
+  background: #fcffff;
+}
+
+.replanForm button {
+  border: 0;
+  border-radius: 11px;
+  padding: 11px;
+  background: #0a78b4;
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.replanForm button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.dayPlans {
+  display: grid;
+  gap: 12px;
+}
+
+.dayPanel {
+  border: 1px solid #cfe2ed;
+  border-radius: 12px;
+  padding: 10px;
+  background: #fafdff;
+}
+
+.dayPanel h3 {
+  margin: 4px 2px 10px;
+  color: #134463;
+}
+
+.dayPanel ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 9px;
+}
+
+.dayPanel li {
+  display: grid;
+  grid-template-columns: 82px 1fr;
+  gap: 11px;
+  border: 1px solid #d6e8f1;
+  border-radius: 11px;
+  background: #ffffff;
+  padding: 9px;
+}
+
+.dayPanel time {
+  font-weight: 800;
+  border-radius: 8px;
+  background: #e7f4fb;
+  color: #0b6d97;
+  text-align: center;
+  padding: 6px;
+  height: fit-content;
+}
+
+.dayPanel h4 {
+  margin: 0;
+  color: #143a53;
+}
+
+.dayPanel p {
+  margin: 4px 0 0;
+  color: #3a5f73;
+}
+
+.location {
+  color: #0d6f97 !important;
+  font-weight: 700;
+}
+
+.backLink:focus-visible,
+.replanForm input:focus-visible,
+.replanForm button:focus-visible {
+  outline: 3px solid #2cc2ff;
+  outline-offset: 2px;
+}
+
+@media (max-width: 700px) {
+  .dayPanel li {
+    grid-template-columns: 1fr;
+  }
+}

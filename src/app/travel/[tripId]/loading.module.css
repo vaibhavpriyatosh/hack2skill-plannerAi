@@ -1,0 +1,37 @@
+.page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #d8ebf4 0%, #edf6fb 100%);
+  padding: 20px;
+}
+
+.container {
+  width: min(1120px, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 12px;
+}
+
+.header,
+.block {
+  border-radius: 14px;
+  background: linear-gradient(90deg, #e3edf3 20%, #f0f6fa 50%, #e3edf3 80%);
+  background-size: 240% 100%;
+  animation: shimmer 1.25s linear infinite;
+}
+
+.header {
+  height: 110px;
+}
+
+.block {
+  height: 220px;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}

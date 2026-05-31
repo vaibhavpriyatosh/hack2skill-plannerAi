@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/options";
-import { createTrip, insertApiLog, listTripsByUser, updateTripItinerary } from "@/lib/db";
+import { createTrip, insertApiLog, listTripSummariesByUser, updateTripItinerary } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { generateItinerary } from "@/lib/openai/itinerary";
 import { createTripSchema } from "@/lib/validation/trip-schema";
@@ -14,7 +14,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const trips = await listTripsByUser(userId);
+  const trips = await listTripSummariesByUser(userId);
 
   await insertApiLog({
     route: "/api/trips",

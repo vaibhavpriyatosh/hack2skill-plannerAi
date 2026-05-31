@@ -1,0 +1,216 @@
+.page {
+  min-height: 100vh;
+  padding: 16px 20px 30px;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(255, 205, 126, 0.45), transparent 34%),
+    radial-gradient(circle at 82% 0%, rgba(74, 220, 210, 0.4), transparent 28%),
+    linear-gradient(165deg, #c7ebef 0%, #d7edf8 48%, #eef5fb 100%);
+  color: #123955;
+  font-family: "Avenir Next", "Trebuchet MS", "Segoe UI", sans-serif;
+}
+
+.topbar {
+  width: min(1120px, 100%);
+  margin: 0 auto 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.brand {
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #0f5679;
+}
+
+.userActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.userName {
+  font-weight: 700;
+}
+
+.signOutButton {
+  border: 1px solid #99c7da;
+  background: rgba(255, 255, 255, 0.85);
+  color: #0f5679;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+.main {
+  width: min(1120px, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 16px;
+}
+
+.heroCard,
+.searchCard,
+.historyCard {
+  border: 1px solid #d1e3ee;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 22px rgba(20, 57, 82, 0.11);
+  padding: 18px;
+}
+
+.badge {
+  margin: 0;
+  display: inline-block;
+  background: #e6f6ff;
+  color: #0c6f99;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.heroCard h1 {
+  margin: 10px 0 8px;
+  font-size: clamp(1.5rem, 3vw, 2.2rem);
+}
+
+.heroCard p {
+  margin: 0;
+  color: #35596f;
+}
+
+.status {
+  margin-top: 10px !important;
+  font-weight: 700;
+  color: #0a6b95 !important;
+}
+
+.form {
+  display: grid;
+  gap: 10px;
+}
+
+.modeRow {
+  display: flex;
+  gap: 8px;
+}
+
+.modeButton {
+  border: 1px solid #bdd8e6;
+  border-radius: 999px;
+  background: #f4fbff;
+  color: #1c4f6d;
+  padding: 7px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.modeButtonActive {
+  background: #0a78b4;
+  border-color: #0a78b4;
+  color: #fff;
+}
+
+.fieldGrid {
+  display: grid;
+  gap: 8px;
+}
+
+.fieldGrid label {
+  font-weight: 700;
+  color: #1f4e6a;
+}
+
+.fieldGrid input,
+.fieldGrid select {
+  border: 1px solid #c2dae7;
+  border-radius: 10px;
+  padding: 10px 11px;
+  background: #fcffff;
+  color: #153f58;
+}
+
+.fieldGrid input::placeholder {
+  color: #6f8ea2;
+}
+
+.dateGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.searchButton {
+  margin-top: 4px;
+  border: 0;
+  border-radius: 12px;
+  padding: 12px;
+  background: #0a78b4;
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.searchButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.resultsGrid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.resultCard {
+  border: 1px solid #cde1ec;
+  border-radius: 10px;
+  padding: 10px;
+  text-decoration: none;
+  color: #173d57;
+  background: #fbfeff;
+  display: grid;
+  gap: 4px;
+}
+
+.resultCard h3 {
+  margin: 0;
+}
+
+.resultCard p {
+  margin: 0;
+  color: #47697e;
+}
+
+.resultStatus {
+  width: fit-content;
+  margin-top: 4px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  padding: 4px 8px;
+  text-transform: capitalize;
+  background: #e6f4fb;
+  color: #0a6f9a;
+  font-weight: 700;
+}
+
+.signOutButton:focus-visible,
+.modeButton:focus-visible,
+.fieldGrid input:focus-visible,
+.fieldGrid select:focus-visible,
+.searchButton:focus-visible,
+.resultCard:focus-visible {
+  outline: 3px solid #2cc2ff;
+  outline-offset: 2px;
+}
+
+@media (max-width: 760px) {
+  .dateGrid {
+    grid-template-columns: 1fr;
+  }
+}
