@@ -22,6 +22,10 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
   },
+  // Avoid transient OAuth discovery failures on slower networks.
+  httpOptions: {
+    timeout: 15_000,
+  },
   providers: [
     GoogleProvider({
       clientId: env.GOOGLE_CLIENT_ID,

@@ -6,6 +6,7 @@ const baseSchema = z.object({
   NEXTAUTH_SECRET: z.string().min(16).default("dev-only-secret-change-me"),
   GOOGLE_CLIENT_ID: z.string().default(""),
   GOOGLE_CLIENT_SECRET: z.string().default(""),
+  DB_URL: z.string().default(""),
   DATABASE_URL: z.string().default(""),
   POSTGRES_URL: z.string().default(""),
   DB_SSL_REJECT_UNAUTHORIZED: z.enum(["true", "false"]).default("false"),
@@ -40,7 +41,7 @@ export function validateProductionEnv(env: AppEnv): void {
     throw new Error("Google OAuth credentials are required in production.");
   }
 
-  if (!env.DATABASE_URL && !env.POSTGRES_URL) {
-    throw new Error("DATABASE_URL or POSTGRES_URL is required in production.");
+  if (!env.DB_URL && !env.DATABASE_URL && !env.POSTGRES_URL) {
+    throw new Error("DB_URL or DATABASE_URL or POSTGRES_URL is required in production.");
   }
 }

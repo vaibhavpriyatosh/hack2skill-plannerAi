@@ -44,10 +44,10 @@ function normalizeNullable(value: string | null | undefined): string | null {
 
 function getConnectionString(): string {
   const env = getEnv();
-  const conn = env.DATABASE_URL || env.POSTGRES_URL;
+  const conn = env.DB_URL || env.DATABASE_URL || env.POSTGRES_URL;
 
   if (!conn) {
-    throw new Error("Missing DATABASE_URL/POSTGRES_URL for database connection.");
+    throw new Error("Missing DB_URL/DATABASE_URL/POSTGRES_URL for database connection.");
   }
 
   return conn;
